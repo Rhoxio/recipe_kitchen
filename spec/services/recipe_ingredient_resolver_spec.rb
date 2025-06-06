@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe RecipeEligibilityChecker do
+RSpec.describe RecipeIngredientResolver do
 
   let!(:user){create(:user)}
   let!(:recipe){create(:recipe)}
@@ -15,12 +15,12 @@ RSpec.describe RecipeEligibilityChecker do
       end
 
       it "correctly detects eligibility" do
-        result = RecipeEligibilityChecker.call(recipe: recipe, user: user)
-        expect(result).to eq(true)
+        result = described_class.call(recipe: recipe, user: user)
+        expect(result.success).to eq(true)
       end
 
       it "returned status struct" do
-        result = RecipeEligibilityChecker.call(recipe: recipe, user: user, return_result: true)
+        result = described_class.call(recipe: recipe, user: user)
         expect(result.missing_ingredients.empty?).to eq(true)
         expect(result.success).to eq(true)
       end
@@ -35,12 +35,12 @@ RSpec.describe RecipeEligibilityChecker do
       it "correctly detects ineligibility" do
         user.ingredients = []
         user.save!
-        result = RecipeEligibilityChecker.call(recipe: recipe, user: user)
-        expect(result).to eq(false)
+        result = described_class.call(recipe: recipe, user: user)
+        expect(result.success).to eq(false)
       end
 
       it "returned status struct" do
-        result = RecipeEligibilityChecker.call(recipe: recipe, user: user, return_result: true)
+        result = described_class.call(recipe: recipe, user: user)
         expect(result.missing_ingredients.keys.in?(["Flour", "Eggs"]))
         expect(result.success).to eq(false)
       end
@@ -82,7 +82,7 @@ RSpec.describe RecipeEligibilityChecker do
         end
 
         it "will detect valid substitutions" do
-          result = RecipeEligibilityChecker.call(recipe: recipe, user: user, return_result: true, allow_substitutions: true)
+          result = described_class.call(recipe: recipe, user: user, allow_substitutions: true)
           expect(result.success).to eq(true)
           expect(result.missing_ingredients.blank?).to eq(true)
           expect(result.substitution_map["Eggs"]).to eq("Duck Eggs")
@@ -105,7 +105,7 @@ RSpec.describe RecipeEligibilityChecker do
         end
 
         it "will handle missing substitutions" do
-          result = RecipeEligibilityChecker.call(recipe: recipe, user: user, return_result: true, allow_substitutions: true)
+          result = described_class.call(recipe: recipe, user: user, allow_substitutions: true)
           expect(result.success).to eq(false)
           expect(result.missing_ingredients["Milk"]).to eq(1)
           expect(result.missing_ingredients["Eggs"]).to eq(1)
